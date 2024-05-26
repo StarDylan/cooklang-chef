@@ -41,25 +41,21 @@ pub async fn search(
 ) -> Response {
     let srch = Searcher::from(query);
 
-    let recipes = if srch.is_empty() {
-        Vec::new()
-    } else {
-        state
-            .recipe_index
-            .search(
-                |entry, meta| match meta.and_then(|r| r.valid_output()) {
-                    Some(m) => {
-                        let name = meta_name(m).unwrap_or(entry.name());
-                        srch.matches_recipe(name, m.tags().unwrap_or(&[]))
-                    }
-                    None => false,
-                },
-                |entry, meta| recipe_entry_context(entry, &state, meta),
-                0,
-                12,
-            )
-            .await
-    };
+    let recipes = state
+        .recipe_index
+        .search(
+            |entry, meta| match meta.and_then(|r| r.valid_output()) {
+                Some(m) => {
+                    let name = meta_name(m).unwrap_or(entry.name());
+                    srch.matches_recipe(name, m.tags().unwrap_or(&[]))
+                }
+                None => false,
+            },
+            |entry, meta| recipe_entry_context(entry, &state, meta),
+            0,
+            12,
+        )
+        .await;
 
     let is_htmx_search = headers.get("HX-Trigger").is_some_and(|v| v == "search");
 
@@ -114,9 +110,5 @@ impl Searcher {
         }
         q.pop();
         q
-    }
-
-    fn is_empty(&self) -> bool {
-        self.name_parts.is_empty() && self.tags.is_empty()
     }
 }
